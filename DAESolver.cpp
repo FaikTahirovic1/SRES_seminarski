@@ -3,6 +3,7 @@
 #include <vector>
 #include <iomanip>
 #include <stdexcept>
+#include <functional>
 /*
   DAE koji rjesavamo je
   y_1 + ni * t * y_2 = q(t)  algebarska
@@ -122,22 +123,6 @@ std::vector<std::vector<double>> dajInverznu(const std::vector<std::vector<doubl
     return rjesenje;
 }
 
-std::vector<double> RjesiSistem2x2(double a, double b, double c, double d,
-                                   double e, double f) {
-  /* ax + by = c
-  dx +ey = f
-  d*a*x  d*b*y = c * d
-  a*d*x + a* e *y = a * f
-  y(d * b - a * e) = c * d - a * f; bitno
-  aex + bey = ce
-  dbx + eby = fb
-  x(ae - db) = ce - fb
-*/
-
-  return std::vector<double>{(c * e - f * b) / (a * e - d * b),
-                             (c * d - a * f) / (d * b - a * e)};
-}
-
 void IspisiMatricu(const std::vector<std::vector<double>> mat) {
     for(std::size_t i = 0; i < mat.size(); i++) {
         for(std::size_t j = 0; j < mat.at(0).size(); j++) {
@@ -181,6 +166,32 @@ std::vector<double>ProizvodMatriceIKolone(std::vector<std::vector<double>>a, std
     }
   return rjesenje;
 }
+std::vector<std::vector<double>>MojDAESolverPrvogPrimjera(std::function<double(double)>q, double korak, double trenutak, double ni){
+  std::vector<double> y1{};
+  std::vector<double> y2{};
+  std::vector<std::vector<double>> Y;
+  y1.push_back(0);
+  double delta_t = korak, t = 0;
+  y2.push_back(1 / ni);
+  Y.push_back({0, 1 / ni});
+  t = delta_t;
+  for (int i = 0; i < trenutak / korak; i++) {
+    /*
+    y1 + ni*t*y2 = q(t)
+    y1 - y1(t-1) /delta_t + ni *t * (y2 - y2(t-1))/delta_t  + y_2 (1+ni) = 0;    
+      */
+    
+    std::vector<std::vector<double>>A{{1,ni * t},{1/delta_t, ni * t / delta_t + 1 + ni}};
+    std::vector<double>b{q(t),Y.at(i).at(0) / delta_t + ni * t * Y.at(i).at(1) / delta_t};
+    Y.push_back(ProizvodMatriceIKolone(dajInverznu(A), b));
+    t += delta_t;
+  }
+  return Y;
+
+  
+
+  
+}
 int main() {
   double ni = 2.0;
   // koristimo q(t) kao sin(t)
@@ -192,28 +203,13 @@ int main() {
   double korak;
   std::cin >> korak;
 
-  y1.push_back(0);
-  double delta_t = korak, t = 0;
-  y2.push_back(1 / ni);
-  Y.push_back({0, 1 / ni});
-  t = delta_t;
-
   std::cout << "Do kojeg trenutka: ";
   double ts = 0;
   std::cin >> ts;
-  for (int i = 0; i < ts / korak; i++) {
-
-    /*
-    y1 + ni*t*y2 = q(t)
-    y1 - y1(t-1) /delta_t + ni *t * (y2 - y2(t-1))/delta_t  + y_2 (1+ni) = 0;
-
-    
-      */
-    std::vector<std::vector<double>>A{{1,ni * t},{1/delta_t, ni * t / delta_t + 1 + ni}};
-    std::vector<double>b{sin(t),Y.at(i).at(0) / delta_t + ni * t * Y.at(i).at(1) / delta_t};
-    Y.push_back(ProizvodMatriceIKolone(dajInverznu(A), b));
-    t += delta_t;
-  }
+  Y = MojDAESolverPrvogPrimjera([](double x) -> double {
+                       return sin(x);
+                   }, korak, ts, ni);
+  
   std::cout << "y1 je nakon " << ts << "s = " << Y.at(ts / korak - 1).at(0)
             << "dok je y2 nakon " << ts << "s = " << Y.at(ts / korak - 1).at(1);
   std::cout << std::endl;
