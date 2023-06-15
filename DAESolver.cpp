@@ -1,9 +1,11 @@
 #include <iostream>
-#include <math.h>
 #include <vector>
+#include <string>
+#include <math.h>
 #include <iomanip>
 #include <stdexcept>
 #include <functional>
+
 /*
   DAE koji rjesavamo je
   y_1 + ni * t * y_2 = q(t)  algebarska
@@ -11,117 +13,86 @@
   dot(y_1) + ni * y_2 + ni * t * dot(y_2) = dot(q(t))
   */
 
-double dajDeterminantu(const std::vector<std::vector<double>> vect) {
-    if(vect.size() != vect.at(0).size()) {
-        throw std::runtime_error("Matrica nije kvadratna");
-    } 
-    int dimenzija = vect.size();
+ std::vector<std::vector<double>> inverse_matrix(std::vector<std::vector<double>> matrix, int dimension)
+{
+    std::vector<std::vector<double>> inverse_matrix(matrix.size(), std::vector<double> (matrix.size()));
+    std::vector<std::vector<double>> lower(matrix.size(), std::vector<double> (matrix.size()));
+    std::vector<std::vector<double>> upper(matrix.size(), std::vector<double> (matrix.size()));
+    std::vector<std::vector<double>> Z(matrix.size(), std::vector<double> (matrix.size()));
+    std::vector<std::vector<double>> I(matrix.size(), std::vector<double> (matrix.size()));
 
-    if(dimenzija == 0) {
-        return 1;
+    for (int i=0; i<dimension; i++){
+      for (int j=0; j<dimension; j++){
+        if (i==j) I[i][i]=1;
+        else I[i][j]=0;
+        Z[i][j]=0;
+      }
     }
-
-    if(dimenzija == 1) {
-        return vect.at(0).at(0);
-    }
-
-    if(dimenzija == 2) {
-        return vect.at(0).at(0) * vect.at(1).at(1) - vect.at(0).at(1) * vect.at(1).at(0);
-    }
-
-    double rezultat = 0;
-    int znak = 1;
-    for(int i = 0; i < dimenzija; i++) {
-
-        std::vector<std::vector<double>> subVect(dimenzija - 1, std::vector<double> (dimenzija - 1));
-        for(int m = 1; m < dimenzija; m++) {
-            int z = 0;
-            for(int n = 0; n < dimenzija; n++) {
-                if(n != i) {
-                    subVect.at(m - 1).at(z) = vect.at(m).at(n);
-                    z++;
+  
+    int i = 0, j = 0, k = 0;
+    for (i = 0; i < dimension; i++)
+    {
+        for (j = 0; j < dimension; j++)
+        {
+            if (j < i)
+                lower[j][i] = 0;
+            else
+            {
+                lower[j][i] = matrix[j][i];
+                for (k = 0; k < i; k++)
+                {
+                    lower[j][i] = lower[j][i] - lower[j][k] * upper[k][i];
                 }
             }
         }
-
-        rezultat = rezultat + znak * vect.at(0).at(i) * dajDeterminantu(subVect);
-        znak = -znak;
-    }
-
-    return rezultat;
-}
-
-std::vector<std::vector<double>> TransponujMatricu(const std::vector<std::vector<double>> matrica1) {
-
-
-    std::vector<std::vector<double>> rjesenje(matrica1.at(0).size(), std::vector<double> (matrica1.size()));
-
-    //Filling rjesenje-matrica
-    for(size_t i = 0; i < matrica1.size(); i++) {
-        for(size_t j = 0; j < matrica1[0].size(); j++) {
-            rjesenje.at(j).at(i) = matrica1.at(i).at(j);
-        }
-    }
-    return rjesenje;
-}
-
-std::vector<std::vector<double>> DajKofaktorMatrice(const std::vector<std::vector<double>> vect) {
-    if(vect.size() != vect.at(0).size()) {
-        throw std::runtime_error("Matrica nije kvadratna");
-    } 
-
-    std::vector<std::vector<double>> rjesenje(vect.size(), std::vector<double> (vect.size()));
-    std::vector<std::vector<double>> subVect(vect.size() - 1, std::vector<double> (vect.size() - 1));
-
-    for(std::size_t i = 0; i < vect.size(); i++) {
-        for(std::size_t j = 0; j < vect.at(0).size(); j++) {
-
-            int p = 0;
-            for(size_t x = 0; x < vect.size(); x++) {
-                if(x == i) {
-                    continue;
+        for (j = 0; j < dimension; j++)
+        {
+            if (j < i)
+                upper[i][j] = 0;
+            else if (j == i)
+                upper[i][j] = 1;
+            else
+            {
+                upper[i][j] = matrix[i][j] / lower[i][i];
+                for (k = 0; k < i; k++)
+                {
+                    upper[i][j] = upper[i][j] - ((lower[i][k] * upper[k][j]) / lower[i][i]);
                 }
-                int q = 0;
-
-                for(size_t y = 0; y < vect.size(); y++) {
-                    if(y == j) {
-                        continue;
-                    }
-
-                    subVect.at(p).at(q) = vect.at(x).at(y);
-                    q++;
-                }
-                p++;
             }
-            rjesenje.at(i).at(j) = pow(-1, i + j) * dajDeterminantu(subVect);
         }
-    }
-    return rjesenje;
-}
-std::vector<std::vector<double>> dajInverznu(const std::vector<std::vector<double>> vect) {
-    if(dajDeterminantu(vect) == 0) {
-        throw std::runtime_error("Determinant is 0");
     } 
-
-    double d = 1.0/dajDeterminantu(vect);
-    std::vector<std::vector<double>> rjesenje(vect.size(), std::vector<double> (vect.size()));
-
-    for(size_t i = 0; i < vect.size(); i++) {
-        for(size_t j = 0; j < vect.size(); j++) {
-            rjesenje.at(i).at(j) = vect.at(i).at(j); 
+  
+    // compute z
+    for(int col = 0; col < dimension; col++) {
+        for(int row = 0; row < dimension; row++) {
+            double sum = 0;
+            for(int i = 0; i < dimension; i++) {
+                if(i != row) {
+                    sum += lower[row][i] * Z[i][col];
+                }
+            }
+                Z[row][col] = (I[row][col] - sum)/lower[row][row];
+                }
+            }
+;
+    // compute inverse
+    for(int col = 0; col < dimension; col++) {
+        for(int row = dimension - 1; row >= 0; row--) {
+          double sum = 0;
+          for(int i = 0; i < dimension; i++) {
+              if(i != row) {
+                  sum += upper[row][i] * inverse_matrix[i][col];
+              }
+          }
+            inverse_matrix[row][col] = (Z[row][col] - sum)/ upper[row][row];
         }
     }
-
-    rjesenje = TransponujMatricu(DajKofaktorMatrice(rjesenje));
-
-    for(size_t i = 0; i < vect.size(); i++) {
-        for(size_t j = 0; j < vect.size(); j++) {
-            rjesenje.at(i).at(j) *= d;
-        }
-    }
-
-    return rjesenje;
+  
+    return inverse_matrix;
 }
+
+
+
 
 void IspisiMatricu(const std::vector<std::vector<double>> mat) {
     for(std::size_t i = 0; i < mat.size(); i++) {
@@ -183,7 +154,7 @@ std::vector<std::vector<double>>MojDAESolverPrvogPrimjera(std::function<double(d
     
     std::vector<std::vector<double>>A{{1,ni * t},{1/delta_t, ni * t / delta_t + 1 + ni}};
     std::vector<double>b{q(t),Y.at(i).at(0) / delta_t + ni * t * Y.at(i).at(1) / delta_t};
-    Y.push_back(ProizvodMatriceIKolone(dajInverznu(A), b));
+    Y.push_back(ProizvodMatriceIKolone(inverse_matrix(A,A.size()), b));
     t += delta_t;
   }
   return Y;
@@ -222,11 +193,13 @@ int main() {
   std::cout << "Dakle napravljenje su greske redom "
             << Y.at(ts / korak - 1).at(0) - sin(ts) - ni * cos(ts) * ts << " i "
             << Y.at(ts / korak - 1).at(1) + cos(ts) << std::endl;
-  std::cout << "Relativne greške u postotcima su: "
+  std::cout << "Relativne greske u postotcima su: "
             << (Y.at(ts / korak - 1).at(0) - sin(ts) - ni * cos(ts) * ts) *
                    100 / (sin(ts) + ni * cos(ts) * ts)
             << "% i "
             << (Y.at(ts / korak - 1).at(1) + cos(ts)) * 100 / (-cos(ts)) << "%"
             << std::endl;
+
+
 
 }
