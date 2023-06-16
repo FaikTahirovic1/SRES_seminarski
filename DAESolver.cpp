@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <stdexcept>
 #include <functional>
+#include <fstream>
 
 /*
   DAE koji rjesavamo je
@@ -143,8 +144,8 @@ std::vector<std::vector<double>>MojDAESolverPrvogPrimjera(std::function<double(d
   std::vector<std::vector<double>> Y;
   y1.push_back(0);
   double delta_t = korak, t = 0;
-  y2.push_back(1 / ni);
-  Y.push_back({0, 1 / ni});
+  y2.push_back(-1);
+  Y.push_back({0, -1});
   t = delta_t;
   for (int i = 0; i < trenutak / korak; i++) {
     /*
@@ -199,6 +200,14 @@ int main() {
             << "% i "
             << (Y.at(ts / korak - 1).at(1) + cos(ts)) * 100 / (-cos(ts)) << "%"
             << std::endl;
+            std::ofstream out("y1.txt");
+            std::streambuf *coutbuf = std::cout.rdbuf(); //save old buf
+            std::cout.rdbuf(out.rdbuf()); //redirect std::cout to out.txt!
+            for(int i = 0; i < ts/korak;i++)std::cout<<Y.at(i).at(0)<<std::endl;
+
+            std::ofstream out2("y2.txt");
+            std::cout.rdbuf(out2.rdbuf()); //redirect std::cout to out.txt!
+            for(int i = 0; i < ts/korak;i++)std::cout<<Y.at(i).at(1)<<std::endl;
 
 
 
