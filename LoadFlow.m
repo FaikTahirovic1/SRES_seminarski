@@ -1,0 +1,10 @@
+mpopt = mpoption('PF_ALG', 1,'ENFORCE_Q_LIMS',0);
+[RESULTS1, SUCCESS] =runpf('IEEE9Bus',mpopt);
+mpc=IEEE9Bus;
+bus1=RESULTS1.bus;branch1=RESULTS1.branch;gen1=RESULTS1.gen;
+Ybus1 = makeYbus(baseMVA, bus1, branch1) ;Ybus1=full(Ybus1);
+Ybus=Ybus1; Y = Ybus; bus=bus1; branch=branch1; gen=gen1;
+writematrix(Ybus, "Ybus_data.txt");
+writematrix(bus, "bus_data.txt");
+writematrix(gen, "gen_data.txt");
+writematrix(branch, "branch_data.txt");
