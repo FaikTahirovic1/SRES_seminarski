@@ -247,6 +247,29 @@ a0(0,seq(m,2*m-1)) = Iq0;
 a0(0,seq(2*m,2*m+n-1)) = V0;
 a0(0,seq(2*m+n,2*m+2*n-1)) = TH0; // pocetne vrijednosti algebarskih jednacina
 
+// racunanje matrice Yred
+V0 = V0.transpose();
+Eigen::MatrixXcd YL = (PL - i_u*QL);
+YL = MatrixXcd( YL.array() / ((V0.array()).square())  );
+Eigen::MatrixXcd YLdiag(n,n);
+YLdiag.setZero();
+for(int i=0; i<n; i++){
+    for(int j=0; j<n; j++){
+        if(i==j) {
+            YLdiag(i,j) = YL(i,0);
+        }
+
+    }
+}
+
+Eigen::MatrixXcd Y_Aug = Ybus + YLdiag;
+Eigen::MatrixXcd Y11(m,m), Y12(m,n-m), Y21(n-m,m), Y22(n-m,n-m), Yred, YredInv;
+Y11 = Y_Aug(seq(0,m-1), seq(0,m-1));
+Y12 = Y_Aug(seq(0,m-1), seq(m,n-1));
+Y21 = Y_Aug(seq(m,n-1), seq(0,m-1));
+Y22 = Y_Aug(seq(m,n-1), seq(m,n-1));
+Yred = Y11-Y12*Y22.inverse()*Y21;
+YredInv = Yred.inverse();
 
 Eigen::MatrixXd Eqp, Edp, Delta,w,Efd,RF,VR, TM, PSV, Id, Iq, V, TH;
 Eqp = x0(0,seq(0,m-1));
@@ -279,7 +302,8 @@ std::cout << "TH: "<< TH <<std::endl;
 std::cout << "PC: "<< PC <<std::endl;
 std::cout << "Vref" << Vref << std::endl;
 std::cout <<"PC: " << PC << std::endl;
-
+std::cout <<"Yred: "<<Yred << std::endl;
 
 return 0;
 }
+
